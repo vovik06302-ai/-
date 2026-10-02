@@ -38,7 +38,7 @@ export const UpdateModal: React.FC<Props> = ({
             <div className="flex flex-col items-center justify-center py-2">
               <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-2" />
               <p className="text-base font-bold text-slate-800">Установлена последняя версия</p>
-              <p className="text-xs text-slate-500 mt-1">Версия v1.0.0 (актуальная)</p>
+              <p className="text-xs text-slate-500 mt-1">Версия {updateStatus.currentVersion || 'v1.2.0'} (актуальная)</p>
             </div>
           )}
 

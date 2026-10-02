@@ -302,36 +302,43 @@ const MainContent: React.FC = () => {
     setToastMessage(`Добавлена выплата ${amount} ₽ работнику «${emp.name}»`);
   };
 
+  // State for current app version
+  const [appVersion, setAppVersion] = useState('v1.0.0');
+
   // Update check trigger
   const triggerUpdateCheck = () => {
     setUpdateStatus({ status: 'checking' });
     setShowUpdate(true);
 
     setTimeout(() => {
+      const nextVer = appVersion === 'v1.0.0' ? 'v1.2.0' : 'v1.2.5';
       setUpdateStatus({
         status: 'update_available',
-        latestVersion: 'v1.1.0',
-        releaseNotes: '• Добавлена продвинутая аналитика категорий\n• Улучшено распознавание речи\n• Оптимизация быстродействия',
+        latestVersion: nextVer,
+        releaseNotes: '• Обновлён интерфейс расхода и зарплат\n• Улучшена стабильность на мобильных устройствах\n• Быстрая обработка голосовых команд',
         downloadUrl: '#'
       });
-    }, 1200);
+    }, 800);
   };
 
   const startDownloadUpdate = () => {
     setUpdateStatus({ status: 'downloading', progress: 0 });
     let prog = 0;
     const interval = setInterval(() => {
-      prog += 20;
+      prog += 25;
       if (prog >= 100) {
         clearInterval(interval);
         setUpdateStatus({ status: 'downloaded' });
         setTimeout(() => {
-          setUpdateStatus({ status: 'up_to_date', currentVersion: 'v1.1.0' });
-        }, 1500);
+          const newVersion = appVersion === 'v1.0.0' ? 'v1.2.0' : 'v1.2.5';
+          setAppVersion(newVersion);
+          setUpdateStatus({ status: 'up_to_date', currentVersion: newVersion });
+          setToastMessage(`Приложение успешно обновлено до ${newVersion}!`);
+        }, 1200);
       } else {
         setUpdateStatus({ status: 'downloading', progress: prog });
       }
-    }, 300);
+    }, 250);
   };
 
   const debtorSummaries = groupDebtors(transactions);
