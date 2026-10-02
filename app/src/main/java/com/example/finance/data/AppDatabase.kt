@@ -12,18 +12,23 @@ class Converters {
     fun fromTransactionType(value: TransactionType): String = value.name
 
     @TypeConverter
-    fun toTransactionType(value: String): TransactionType = try {
-        TransactionType.valueOf(value)
+    fun toTransactionType(value: String): String = try {
+        TransactionType.valueOf(value).name
     } catch (e: Exception) {
-        TransactionType.PROFIT
+        TransactionType.PROFIT.name
     }
 }
 
-@Database(entities = [TransactionEntity::class, EmployeeEntity::class], version = 2, exportSchema = false)
+@Database(
+    entities = [TransactionEntity::class, EmployeeEntity::class, SalaryPayoutEntity::class],
+    version = 3,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun employeeDao(): EmployeeDao
+    abstract fun salaryPayoutDao(): SalaryPayoutDao
 
     companion object {
         @Volatile

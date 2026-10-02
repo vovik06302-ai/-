@@ -25,6 +25,7 @@ import com.example.finance.ui.MainScreen
 import com.example.finance.ui.MainViewModel
 import com.example.finance.ui.ReportScreen
 import com.example.finance.voice.VoiceManager
+import com.example.ui.theme.AppTheme
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -50,7 +51,9 @@ class MainActivity : ComponentActivity() {
         voiceManager = VoiceManager(this)
 
         setContent {
-            MyApplicationTheme {
+            val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle(initialValue = AppTheme.BLUE)
+
+            MyApplicationTheme(appTheme = currentTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

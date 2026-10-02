@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance.data.AppDatabase
 import com.example.finance.data.EmployeeEntity
+import com.example.finance.data.SalaryPayoutEntity
+import com.example.finance.data.ThemeDataStore
 import com.example.finance.data.TransactionEntity
 import com.example.finance.data.TransactionRepository
 import com.example.finance.data.TransactionType
@@ -12,6 +14,7 @@ import com.example.finance.update.UpdateManager
 import com.example.finance.update.UpdateState
 import com.example.finance.voice.VoiceCommand
 import com.example.finance.voice.VoiceParser
+import com.example.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,11 +45,13 @@ data class DebtorSummaryGroup(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: TransactionRepository
+    private val themeDataStore: ThemeDataStore
     val updateManager: UpdateManager
 
     init {
         val db = AppDatabase.getDatabase(application)
-        repository = TransactionRepository(db.transactionDao(), db.employeeDao())
+        repository = TransactionRepository(db.transactionDao(), db.employeeDao(), db.salaryPayoutDao())
+        themeDataStore = ThemeDataStore(application)
         updateManager = UpdateManager(application)
     }
 
@@ -54,6 +59,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val selectedFilter = MutableStateFlow(FilterPeriod.ALL_TIME)
 
     val updateState: StateFlow<UpdateState> = updateManager.updateState
+
+    val currentTheme: StateFlow<AppTheme> = themeDataStore.selectedTheme
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AppTheme.BLUE
+        )
 
     val allTransactions: StateFlow<List<TransactionEntity>> = repository.allTransactions
         .stateIn(
@@ -63,6 +75,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     val allEmployees: StateFlow<List<EmployeeEntity>> = repository.allEmployees
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val allSalaryPayouts: StateFlow<List<SalaryPayoutEntity>> = repository.allSalaryPayouts
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -122,6 +141,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _voiceFeedback = MutableStateFlow<String?>(null)
     val voiceFeedback: StateFlow<String?> = _voiceFeedback.asStateFlow()
+
+    fun selectTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            themeDataStore.saveTheme(theme)
+            _voiceFeedback.value = "Тема «${theme.label}» сохранена"
+        }
+    }
 
     fun addTransaction(type: TransactionType, amount: Double, note: String, clientInfo: String) {
         viewModelScope.launch {
@@ -219,10 +245,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun paySalary(employee: EmployeeEntity) {
+    fun addSalaryPayout(employee: EmployeeEntity, amount: Double, onResult: (Boolean, String) -> Unit) {
+        if (amount <= 0) {
+            onResult(false, "Сумма выплаты должна быть больше 0 ₽")
+            return
+        }
         viewModelScope.launch {
-            repository.paySalary(employee)
-            _voiceFeedback.value = "Выдана зарплата ${employee.salary.toInt()} ₽ сотруднику «${employee.name}»"
+            repository.addSalaryPayout(employee.id, employee.name, amount)
+            _voiceFeedback.value = "Добавлена выплата ${amount.toInt()} ₽ работнику «${employee.name}»"
+            onResult(true, "Выплата успешно добавлена")
         }
     }
 

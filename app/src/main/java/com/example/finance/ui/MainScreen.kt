@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoneyOff
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -37,6 +38,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,6 +95,7 @@ fun MainScreen(
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showDebtorSearchDialog by remember { mutableStateOf(false) }
     var showSalaryDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("ru", "RU")).apply { maximumFractionDigits = 0 } }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -114,6 +117,17 @@ fun MainScreen(
                     )
                 },
                 actions = {
+                    // Theme selection button
+                    IconButton(
+                        onClick = { showThemeDialog = true },
+                        modifier = Modifier.testTag("theme_settings_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = "Тема оформления"
+                        )
+                    }
+
                     // Update check button
                     IconButton(
                         onClick = {
@@ -145,8 +159,9 @@ fun MainScreen(
                 )
             )
         },
+        floatingActionButtonPosition = FabPosition.Start,
         floatingActionButton = {
-            // Voice Command Floating Action Button
+            // Voice Command Floating Action Button (Positioned at bottom-left!)
             FloatingActionButton(
                 onClick = onStartVoiceInput,
                 containerColor = if (isVoiceListening) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
@@ -406,8 +421,10 @@ fun MainScreen(
 
     if (showSalaryDialog) {
         val employees by viewModel.allEmployees.collectAsStateWithLifecycle()
+        val payouts by viewModel.allSalaryPayouts.collectAsStateWithLifecycle()
         SalaryDialog(
             employees = employees,
+            payouts = payouts,
             onDismiss = { showSalaryDialog = false },
             onAddEmployee = { name, salary, onError ->
                 viewModel.addEmployee(name, salary) { success, msg ->
@@ -422,8 +439,22 @@ fun MainScreen(
             onDeleteEmployee = { employee ->
                 viewModel.deleteEmployee(employee)
             },
-            onPaySalary = { employee ->
-                viewModel.paySalary(employee)
+            onAddSalaryPayout = { employee, amount, onError ->
+                viewModel.addSalaryPayout(employee, amount) { success, msg ->
+                    if (!success) onError(msg)
+                }
+            }
+        )
+    }
+
+    if (showThemeDialog) {
+        val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
+        ThemeSelectionDialog(
+            selectedTheme = currentTheme,
+            onDismiss = { showThemeDialog = false },
+            onSelectTheme = { theme ->
+                viewModel.selectTheme(theme)
+                showThemeDialog = false
             }
         )
     }

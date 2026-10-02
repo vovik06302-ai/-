@@ -1,5 +1,7 @@
 package com.example.finance.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +22,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,18 +52,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.finance.data.EmployeeEntity
+import com.example.finance.data.SalaryPayoutEntity
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @Composable
 fun SalaryDialog(
     employees: List<EmployeeEntity>,
+    payouts: List<SalaryPayoutEntity>,
     onDismiss: () -> Unit,
     onAddEmployee: (name: String, salary: Double, onError: (String) -> Unit) -> Unit,
     onUpdateEmployee: (employee: EmployeeEntity, onError: (String) -> Unit) -> Unit,
     onDeleteEmployee: (employee: EmployeeEntity) -> Unit,
-    onPaySalary: (employee: EmployeeEntity) -> Unit
+    onAddSalaryPayout: (employee: EmployeeEntity, amount: Double, onError: (String) -> Unit) -> Unit
 ) {
     var showAddEditEmployeeDialog by remember { mutableStateOf(false) }
     var editingEmployee by remember { mutableStateOf<EmployeeEntity?>(null) }
@@ -120,19 +131,23 @@ fun SalaryDialog(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .heightIn(max = 360.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(employees, key = { it.id }) { employee ->
+                            val employeePayouts = payouts.filter { it.employeeId == employee.id }
                             EmployeeItemCard(
                                 employee = employee,
+                                payouts = employeePayouts,
                                 currencyFormat = currencyFormat,
                                 onEdit = {
                                     editingEmployee = employee
                                     showAddEditEmployeeDialog = true
                                 },
                                 onDelete = { onDeleteEmployee(employee) },
-                                onPaySalary = { onPaySalary(employee) }
+                                onAddPayout = { amount, onError ->
+                                    onAddSalaryPayout(employee, amount, onError)
+                                }
                             )
                         }
                     }
@@ -170,33 +185,37 @@ fun SalaryDialog(
 @Composable
 fun EmployeeItemCard(
     employee: EmployeeEntity,
+    payouts: List<SalaryPayoutEntity>,
     currencyFormat: NumberFormat,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onPaySalary: () -> Unit
+    onAddPayout: (amount: Double, onError: (String) -> Unit) -> Unit
 ) {
+    var payoutInputText by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showPayoutHistory by remember { mutableStateOf(false) }
+
+    val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru")) }
+    val totalPaid = payouts.sumOf { it.amount }
+    val remaining = employee.salary - totalPaid
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Header Row: Employee Name + Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = employee.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        text = "Зарплата: ${currencyFormat.format(employee.salary)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFFC62828)
-                    )
-                }
+                Text(
+                    text = employee.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f)
+                )
 
                 Row {
                     IconButton(
@@ -224,22 +243,149 @@ fun EmployeeItemCard(
                 }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Salary Details
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Месячная зарплата: ${currencyFormat.format(employee.salary)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Выдано всего: ${currencyFormat.format(totalPaid)}",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color(0xFF2E7D32)
+                )
+                Text(
+                    text = "Остаток к выплате: ${currencyFormat.format(if (remaining < 0) 0.0 else remaining)}",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (remaining > 0) Color(0xFFC62828) else Color(0xFF2E7D32)
+                    )
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                onClick = onPaySalary,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("pay_salary_button_${employee.id}")
+            // Payout History Expandable Toggle Button
+            if (payouts.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "История выплат (${payouts.size}):",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(
+                        onClick = { showPayoutHistory = !showPayoutHistory },
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text(
+                            text = if (showPayoutHistory) "Скрыть" else "Показать",
+                            fontSize = 12.sp
+                        )
+                        Icon(
+                            imageVector = if (showPayoutHistory) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                AnimatedVisibility(visible = showPayoutHistory) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        payouts.forEach { payout ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                        shape = RoundedCornerShape(6.dp)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = dateFormat.format(Date(payout.date)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = currencyFormat.format(payout.amount),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Color(0xFFC62828)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Add Payout Input & Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Payments,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                OutlinedTextField(
+                    value = payoutInputText,
+                    onValueChange = {
+                        payoutInputText = it
+                        errorMessage = null
+                    },
+                    label = { Text("Сумма выплаты") },
+                    placeholder = { Text("10000") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    isError = errorMessage != null,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("payout_amount_input_${employee.id}")
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Выдать зарплату (${currencyFormat.format(employee.salary)})")
+
+                Button(
+                    onClick = {
+                        val amount = payoutInputText.replace(",", ".").toDoubleOrNull()
+                        if (amount == null || amount <= 0) {
+                            errorMessage = "Введите сумму больше 0"
+                        } else {
+                            onAddPayout(amount) { err ->
+                                errorMessage = err
+                            }
+                            payoutInputText = ""
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                    modifier = Modifier
+                        .height(56.dp)
+                        .testTag("add_payout_button_${employee.id}")
+                ) {
+                    Text("Добавить\nвыплату", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
@@ -291,7 +437,7 @@ fun AddEditEmployeeSubDialog(
                         salaryText = it
                         errorMessage = null
                     },
-                    label = { Text("Сумма зарплаты (₽)") },
+                    label = { Text("Месячная зарплата (₽)") },
                     placeholder = { Text("50000") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,

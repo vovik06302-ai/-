@@ -4,11 +4,13 @@ import kotlinx.coroutines.flow.Flow
 
 class TransactionRepository(
     private val dao: TransactionDao,
-    private val employeeDao: EmployeeDao
+    private val employeeDao: EmployeeDao,
+    private val salaryPayoutDao: SalaryPayoutDao
 ) {
 
     val allTransactions: Flow<List<TransactionEntity>> = dao.getAllTransactions()
     val allEmployees: Flow<List<EmployeeEntity>> = employeeDao.getAllEmployees()
+    val allSalaryPayouts: Flow<List<SalaryPayoutEntity>> = salaryPayoutDao.getAllSalaryPayouts()
 
     suspend fun insert(transaction: TransactionEntity): Long {
         return dao.insertTransaction(transaction)
@@ -103,14 +105,31 @@ class TransactionRepository(
         employeeDao.deleteEmployee(employee)
     }
 
-    suspend fun paySalary(employee: EmployeeEntity) {
+    // Salary Payout Methods
+    fun getPayoutsForEmployee(employeeId: Long): Flow<List<SalaryPayoutEntity>> {
+        return salaryPayoutDao.getPayoutsForEmployee(employeeId)
+    }
+
+    suspend fun addSalaryPayout(employeeId: Long, employeeName: String, amount: Double): Long {
+        val now = System.currentTimeMillis()
+        val payout = SalaryPayoutEntity(
+            employeeId = employeeId,
+            employeeName = employeeName,
+            amount = amount,
+            date = now
+        )
+        val payoutId = salaryPayoutDao.insertPayout(payout)
+
+        // Also record as expense in main finance history
         val salaryExpense = TransactionEntity(
             type = TransactionType.EXPENSE,
-            amount = employee.salary,
-            note = "Зарплата: ${employee.name}",
-            clientInfo = employee.name,
-            date = System.currentTimeMillis()
+            amount = amount,
+            note = "Выплата зарплаты: $employeeName",
+            clientInfo = employeeName,
+            date = now
         )
         dao.insertTransaction(salaryExpense)
+
+        return payoutId
     }
 }
