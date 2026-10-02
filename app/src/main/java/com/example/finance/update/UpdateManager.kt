@@ -18,9 +18,11 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
-// OWNER/REPO constant as requested
+// Укажите адрес вашего GitHub-репозитория в формате "владелец/репозиторий"
 const val GITHUB_REPO = "vovik06302/finance-app"
 
 sealed class UpdateState {
@@ -67,33 +69,40 @@ class UpdateManager(private val context: Context) {
                     .build()
 
                 client.newCall(request).execute().use { response ->
+                    if (response.code == 404) {
+                        _updateState.value = UpdateState.Error("На GitHub пока нет опубликованного релиза")
+                        return@use
+                    }
+
                     if (!response.isSuccessful) {
-                        _updateState.value = UpdateState.Error("Релиз не найден на GitHub (${response.code})")
+                        _updateState.value = UpdateState.Error("Ошибка проверки обновлений на GitHub (код ${response.code})")
                         return@use
                     }
 
                     val bodyString = response.body?.string() ?: ""
                     val json = JSONObject(bodyString)
-                    val tagName = json.optString("tag_name", "").removePrefix("v")
+                    val rawTag = json.optString("tag_name", "")
+                    val tagName = rawTag.removePrefix("v").removePrefix("V")
                     val body = json.optString("body", "Описание изменений отсутствует")
 
                     val assets = json.optJSONArray("assets")
                     var downloadUrl = ""
 
-                    if (assets != null) {
+                    if (assets != null && assets.length() > 0) {
                         for (i in 0 until assets.length()) {
                             val asset = assets.getJSONObject(i)
                             val name = asset.optString("name", "")
-                            if (name.endsWith(".apk")) {
+                            val contentType = asset.optString("content_type", "")
+                            if (name.lowercase().endsWith(".apk") || contentType == "application/vnd.android.package-archive") {
                                 downloadUrl = asset.optString("browser_download_url", "")
-                                break
+                                if (downloadUrl.isNotEmpty()) break
                             }
                         }
                     }
 
-                    if (downloadUrl.isEmpty()) {
-                        // Fallback URL if asset not explicitly listed
-                        downloadUrl = "https://github.com/$GITHUB_REPO/releases/download/v$tagName/app-release.apk"
+                    if (downloadUrl.isBlank()) {
+                        _updateState.value = UpdateState.Error("В последнем релизе GitHub отсутствует файл APK")
+                        return@use
                     }
 
                     if (isVersionNewer(tagName, currentVersionName)) {
@@ -106,6 +115,10 @@ class UpdateManager(private val context: Context) {
                         _updateState.value = UpdateState.UpToDate(currentVersionName)
                     }
                 }
+            } catch (e: UnknownHostException) {
+                _updateState.value = UpdateState.Error("Ошибка сети: отсутствует подключение к интернету")
+            } catch (e: SocketTimeoutException) {
+                _updateState.value = UpdateState.Error("Ошибка сети: превышено время ожидания ответа от GitHub")
             } catch (e: Exception) {
                 _updateState.value = UpdateState.Error("Ошибка сети: ${e.localizedMessage ?: "не удалось связаться с GitHub"}")
             }
