@@ -143,7 +143,7 @@ export function parseVoiceCommand(rawText: string): VoiceCommand {
 
   // Transaction keywords
   const isProfit = text.includes('прибыль') || text.includes('доход') || text.includes('оплата') || text.includes('заработок');
-  const isExpense = text.includes('трата') || text.includes('траты') || text.includes('расход') || text.includes('расходы') || text.includes('покупка');
+  const isExpense = text.includes('трата') || text.includes('траты') || text.includes('расход') || text.includes('расходы') || text.includes('расходники') || text.includes('расходник') || text.includes('покупка');
   const isDebtor = text.includes('должник') || text.includes('долг') || text.includes('должники') || text.includes('в долг');
 
   if (isProfit || isExpense || isDebtor) {

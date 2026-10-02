@@ -174,6 +174,8 @@ export function parseVoiceCommand(rawText: string): VoiceCommand {
     text.includes('траты') ||
     text.includes('расход') ||
     text.includes('расходы') ||
+    text.includes('расходники') ||
+    text.includes('расходник') ||
     text.includes('покупка');
   const isDebtor =
     text.includes('должник') ||

@@ -42,6 +42,42 @@ export const SalaryModal: React.FC<Props> = ({
           </button>
         </div>
 
+        {/* Total Salary Summary Across All Employees */}
+        {employees.length > 0 && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 mb-4 space-y-1.5 shadow-sm">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Общая зарплата по всем сотрудникам
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="text-slate-500 block">Общий оклад</span>
+                <span className="font-bold text-slate-900 text-sm">
+                  {formatCurrency(employees.reduce((sum, e) => sum + e.salary, 0))}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">Выдано всего</span>
+                <span className="font-bold text-emerald-700 text-sm">
+                  {formatCurrency(payouts.reduce((sum, p) => sum + p.amount, 0))}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">К выплате</span>
+                <span className="font-bold text-red-700 text-sm">
+                  {formatCurrency(
+                    employees.reduce((sum, e) => {
+                      const paid = payouts
+                        .filter((p) => p.employeeId === e.id)
+                        .reduce((s, p) => s + p.amount, 0);
+                      return sum + Math.max(0, e.salary - paid);
+                    }, 0)
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Button */}
         <button
           onClick={() => {
@@ -161,8 +197,8 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
       </div>
 
       <div className="text-xs space-y-1">
-        <div className="text-slate-600">Месячная зарплата: <span className="font-semibold text-slate-900">{formatCurrency(employee.salary)}</span></div>
-        <div className="text-emerald-700 font-medium">Выдано всего: <span className="font-bold">{formatCurrency(totalPaid)}</span></div>
+        <div className="text-slate-600">Месячный оклад: <span className="font-semibold text-slate-900">{formatCurrency(employee.salary)}</span></div>
+        <div className="text-emerald-700 font-medium">Выдано частями: <span className="font-bold">{formatCurrency(totalPaid)}</span></div>
         <div className={remaining > 0 ? 'text-red-700 font-bold' : 'text-emerald-700 font-bold'}>
           Остаток к выплате: {formatCurrency(Math.max(0, remaining))}
         </div>

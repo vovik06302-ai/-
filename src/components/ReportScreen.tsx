@@ -164,7 +164,7 @@ export const ReportScreen: React.FC<Props> = ({
         {/* 3. Expenses Card */}
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between shadow-sm">
           <div>
-            <div className="text-red-950 font-bold text-base">Траты (Расходы)</div>
+            <div className="text-red-950 font-bold text-base">Расходники</div>
             <div className="text-xs text-slate-500">Записей: {expenseItems.length}</div>
           </div>
           <div className="text-xl font-black text-red-700">{formatCurrency(expensesSum)}</div>
@@ -173,7 +173,7 @@ export const ReportScreen: React.FC<Props> = ({
         {/* 4. Grand Total Summary Card */}
         <div className="p-5 bg-blue-900 text-white rounded-2xl shadow-md border border-blue-800">
           <div className="text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
-            ОБЩИЙ ИТОГ (Прибыль + Должники − Траты)
+            ОБЩИЙ ИТОГ (Прибыль + Должники − Расходники)
           </div>
           <div
             className={`text-3xl font-black ${

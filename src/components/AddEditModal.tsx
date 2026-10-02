@@ -29,7 +29,7 @@ export const AddEditModal: React.FC<Props> = ({ type, existingTransaction, onClo
     : type === 'PROFIT'
     ? 'Добавить прибыль'
     : type === 'EXPENSE'
-    ? 'Добавить трату'
+    ? 'Добавить расходники'
     : 'Добавить должника';
 
   const noteLabel = type === 'PROFIT' ? 'Работа / заметка' : type === 'EXPENSE' ? 'Описание / заметка' : 'Работа / за что';

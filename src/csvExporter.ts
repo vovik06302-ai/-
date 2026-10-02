@@ -13,7 +13,7 @@ export function exportAndShareCsv(transactions: TransactionEntity[], filterName:
       minute: '2-digit'
     });
 
-    const typeStr = item.type === 'PROFIT' ? 'Прибыль' : item.type === 'EXPENSE' ? 'Трата' : 'Должник';
+    const typeStr = item.type === 'PROFIT' ? 'Прибыль' : item.type === 'EXPENSE' ? 'Расходники' : 'Должник';
     const noteEscaped = item.note.replace(/;/g, ',').replace(/\n/g, ' ');
     const clientEscaped = item.clientInfo.replace(/;/g, ',').replace(/\n/g, ' ');
 

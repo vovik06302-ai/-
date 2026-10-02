@@ -122,7 +122,7 @@ export const MainScreen: React.FC<Props> = ({
             <div className="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
               <ArrowDownRight className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-red-800">Траты</span>
+            <span className="text-xs font-bold text-red-800">Расходники</span>
           </button>
 
           {/* Debtor Button */}
@@ -166,7 +166,7 @@ export const MainScreen: React.FC<Props> = ({
 
               const colorClass = isProfit ? 'text-emerald-700' : isExpense ? 'text-red-700' : 'text-orange-600';
               const badgeBg = isProfit ? 'bg-emerald-500' : isExpense ? 'bg-red-500' : 'bg-orange-500';
-              const typeLabel = isProfit ? 'Прибыль' : isExpense ? 'Трата' : 'Должник';
+              const typeLabel = isProfit ? 'Прибыль' : isExpense ? 'Расходники' : 'Должник';
 
               return (
                 <div

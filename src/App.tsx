@@ -93,7 +93,7 @@ const MainContent: React.FC = () => {
           date: Date.now()
         };
         setTransactions(prev => [newTx, ...prev]);
-        const typeName = command.type === 'PROFIT' ? 'Прибыль' : command.type === 'EXPENSE' ? 'Трата' : 'Должник';
+        const typeName = command.type === 'PROFIT' ? 'Прибыль' : command.type === 'EXPENSE' ? 'Расходники' : 'Должник';
         setToastMessage(`Добавлена ${typeName}: ${command.amount} ₽ (${command.note})`);
         break;
       }
@@ -299,17 +299,6 @@ const MainContent: React.FC = () => {
       date: Date.now()
     };
     setPayouts(prev => [payout, ...prev]);
-
-    // Also record as expense in main transactions
-    const salaryExpense: TransactionEntity = {
-      id: Date.now() + 1,
-      type: 'EXPENSE',
-      amount,
-      note: `Выплата зарплаты: ${emp.name}`,
-      clientInfo: emp.name,
-      date: Date.now()
-    };
-    setTransactions(prev => [salaryExpense, ...prev]);
     setToastMessage(`Добавлена выплата ${amount} ₽ работнику «${emp.name}»`);
   };
 

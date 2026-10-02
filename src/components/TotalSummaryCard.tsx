@@ -42,7 +42,7 @@ export const TotalSummaryCard: React.FC<Props> = ({ grandTotal, profit, debtors,
           <span className="text-sm font-bold text-orange-600">{formatCurrency(debtors)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-slate-500 font-medium">Траты</span>
+          <span className="text-xs text-slate-500 font-medium">Расходники</span>
           <span className="text-sm font-bold text-red-700">{formatCurrency(expenses)}</span>
         </div>
       </div>

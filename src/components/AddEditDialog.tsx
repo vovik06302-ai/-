@@ -29,7 +29,7 @@ export const AddEditDialog: React.FC<AddEditDialogProps> = ({
     : type === 'PROFIT'
     ? 'Добавить прибыль'
     : type === 'EXPENSE'
-    ? 'Добавить трату'
+    ? 'Добавить расходники'
     : 'Добавить должника';
 
   const noteLabel =

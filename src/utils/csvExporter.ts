@@ -23,7 +23,7 @@ export function exportAndShareCsv(transactions: Transaction[], filterName: strin
       item.type === 'PROFIT'
         ? 'Прибыль'
         : item.type === 'EXPENSE'
-        ? 'Трата'
+        ? 'Расходники'
         : 'Должник';
 
     const noteEscaped = item.note.replace(/;/g, ',').replace(/\n/g, ' ');
