@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -91,6 +92,7 @@ fun MainScreen(
     var editingTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showDebtorSearchDialog by remember { mutableStateOf(false) }
+    var showSalaryDialog by remember { mutableStateOf(false) }
 
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("ru", "RU")).apply { maximumFractionDigits = 0 } }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -217,20 +219,40 @@ fun MainScreen(
                 }
             }
 
-            // FIND DEBTOR BUTTON
-            Button(
-                onClick = { showDebtorSearchDialog = true },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("find_debtor_button")
+            // ACTION ROW: «Найти должника» & «Зарплата»
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(imageVector = Icons.Default.PersonSearch, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Найти должника", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = { showDebtorSearchDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("find_debtor_button")
+                ) {
+                    Icon(imageVector = Icons.Default.PersonSearch, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Должники", fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = { showSalaryDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFC62828).copy(alpha = 0.15f),
+                        contentColor = Color(0xFFC62828)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("salary_button")
+                ) {
+                    Icon(imageVector = Icons.Default.Badge, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Зарплата", fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -378,6 +400,30 @@ fun MainScreen(
                         onError(msg)
                     }
                 }
+            }
+        )
+    }
+
+    if (showSalaryDialog) {
+        val employees by viewModel.allEmployees.collectAsStateWithLifecycle()
+        SalaryDialog(
+            employees = employees,
+            onDismiss = { showSalaryDialog = false },
+            onAddEmployee = { name, salary, onError ->
+                viewModel.addEmployee(name, salary) { success, msg ->
+                    if (!success) onError(msg)
+                }
+            },
+            onUpdateEmployee = { employee, onError ->
+                viewModel.updateEmployee(employee) { success, msg ->
+                    if (!success) onError(msg)
+                }
+            },
+            onDeleteEmployee = { employee ->
+                viewModel.deleteEmployee(employee)
+            },
+            onPaySalary = { employee ->
+                viewModel.paySalary(employee)
             }
         )
     }

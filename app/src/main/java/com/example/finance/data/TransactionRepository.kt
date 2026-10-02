@@ -2,9 +2,13 @@ package com.example.finance.data
 
 import kotlinx.coroutines.flow.Flow
 
-class TransactionRepository(private val dao: TransactionDao) {
+class TransactionRepository(
+    private val dao: TransactionDao,
+    private val employeeDao: EmployeeDao
+) {
 
     val allTransactions: Flow<List<TransactionEntity>> = dao.getAllTransactions()
+    val allEmployees: Flow<List<EmployeeEntity>> = employeeDao.getAllEmployees()
 
     suspend fun insert(transaction: TransactionEntity): Long {
         return dao.insertTransaction(transaction)
@@ -84,5 +88,29 @@ class TransactionRepository(private val dao: TransactionDao) {
         }
 
         return totalDeducted
+    }
+
+    // Employee Management Methods
+    suspend fun insertEmployee(employee: EmployeeEntity): Long {
+        return employeeDao.insertEmployee(employee)
+    }
+
+    suspend fun updateEmployee(employee: EmployeeEntity) {
+        employeeDao.updateEmployee(employee)
+    }
+
+    suspend fun deleteEmployee(employee: EmployeeEntity) {
+        employeeDao.deleteEmployee(employee)
+    }
+
+    suspend fun paySalary(employee: EmployeeEntity) {
+        val salaryExpense = TransactionEntity(
+            type = TransactionType.EXPENSE,
+            amount = employee.salary,
+            note = "Зарплата: ${employee.name}",
+            clientInfo = employee.name,
+            date = System.currentTimeMillis()
+        )
+        dao.insertTransaction(salaryExpense)
     }
 }

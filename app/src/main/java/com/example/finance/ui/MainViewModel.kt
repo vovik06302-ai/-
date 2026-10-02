@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance.data.AppDatabase
+import com.example.finance.data.EmployeeEntity
 import com.example.finance.data.TransactionEntity
 import com.example.finance.data.TransactionRepository
 import com.example.finance.data.TransactionType
@@ -45,7 +46,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val db = AppDatabase.getDatabase(application)
-        repository = TransactionRepository(db.transactionDao())
+        repository = TransactionRepository(db.transactionDao(), db.employeeDao())
         updateManager = UpdateManager(application)
     }
 
@@ -55,6 +56,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val updateState: StateFlow<UpdateState> = updateManager.updateState
 
     val allTransactions: StateFlow<List<TransactionEntity>> = repository.allTransactions
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val allEmployees: StateFlow<List<EmployeeEntity>> = repository.allEmployees
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -168,6 +176,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val msg = "Списано ${deducted.toInt()} ₽ у «$clientName». Остаток долга: ${remainingDebt.toInt()} ₽"
             _voiceFeedback.value = msg
             onResult(true, msg)
+        }
+    }
+
+    // Employee & Salary Methods
+    fun addEmployee(name: String, salary: Double, onResult: (Boolean, String) -> Unit) {
+        if (name.isBlank()) {
+            onResult(false, "Имя сотрудника не может быть пустым")
+            return
+        }
+        if (salary <= 0) {
+            onResult(false, "Сумма зарплаты должна быть больше 0 ₽")
+            return
+        }
+        viewModelScope.launch {
+            repository.insertEmployee(EmployeeEntity(name = name.trim(), salary = salary))
+            _voiceFeedback.value = "Добавлен сотрудник «${name.trim()}» (Зарплата: ${salary.toInt()} ₽)"
+            onResult(true, "Сотрудник добавлен")
+        }
+    }
+
+    fun updateEmployee(employee: EmployeeEntity, onResult: (Boolean, String) -> Unit) {
+        if (employee.name.isBlank()) {
+            onResult(false, "Имя сотрудника не может быть пустым")
+            return
+        }
+        if (employee.salary <= 0) {
+            onResult(false, "Сумма зарплаты должна быть больше 0 ₽")
+            return
+        }
+        viewModelScope.launch {
+            repository.updateEmployee(employee)
+            _voiceFeedback.value = "Обновлены данные сотрудника «${employee.name}»"
+            onResult(true, "Данные обновлены")
+        }
+    }
+
+    fun deleteEmployee(employee: EmployeeEntity) {
+        viewModelScope.launch {
+            repository.deleteEmployee(employee)
+            _voiceFeedback.value = "Сотрудник «${employee.name}» удалён"
+        }
+    }
+
+    fun paySalary(employee: EmployeeEntity) {
+        viewModelScope.launch {
+            repository.paySalary(employee)
+            _voiceFeedback.value = "Выдана зарплата ${employee.salary.toInt()} ₽ сотруднику «${employee.name}»"
         }
     }
 
